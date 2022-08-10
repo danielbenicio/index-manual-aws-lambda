@@ -1,0 +1,83 @@
+image: node:alpine3.14
+
+clone:
+  depth: full
+
+definitions:
+  caches:
+    sonar: ~/.sonar/cache # Caching SonarCloud artifacts will speed up your build
+  steps:
+    - step: &build-test-sonarcloud
+        name: Analyze on SonarCloud
+        caches:
+          - sonar
+        script:
+          - pipe: sonarsource/sonarcloud-scan:1.4.0
+    - step: &check-quality-gate-sonarcloud
+        name: Check the Quality Gate on SonarCloud
+        script:
+          - pipe: sonarsource/sonarcloud-quality-gate:0.1.6
+
+pipelines:
+  branches:
+    "{feature/*,bug/*,hotfix/*}":
+      - step: *build-test-sonarcloud
+      #- step: *check-quality-gate-sonarcloud
+      - step:
+          name: Build App
+          script:
+            - apk add zip git openssh-client
+            - git clone git@bitbucket.org:whirlpool-lar/${BITBUCKET_REPO_SLUG}.git -b ${BITBUCKET_BRANCH}
+            - npm install -g typescript && npm install && npm run build
+            - cp -r package.json ./dist
+            - cd dist && npm install --production
+            - zip -r ../code.zip .
+          artifacts:
+            - code.zip
+    develop:
+      - step: *build-test-sonarcloud
+      #- step: *check-quality-gate-sonarcloud
+      - step:
+          name: Build / Deploy App
+          deployment: Staging
+          script:
+            - rm -rf /opt/atlassian/pipelines/agent/build/.bitbucket/pipelines/generated/pipeline/pipes
+            - apk add zip git openssh-client
+            - git clone git@bitbucket.org:whirlpool-lar/${BITBUCKET_REPO_SLUG}.git -b ${BITBUCKET_BRANCH}
+            - npm install -g typescript && npm install && npm run build
+            - cp -r package.json ./dist
+            - cd dist && npm install --production
+            - zip -r ../code.zip . && cd ..
+            - pipe: atlassian/aws-lambda-deploy:1.5.0
+              variables:
+                AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+                AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+                AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
+                FUNCTION_NAME: ${LAMBDA_FUNCTION_NAME}
+                COMMAND: "update"
+                ZIP_FILE: "code.zip"
+          artifacts:
+            - code.zip
+    master:
+      - step: *build-test-sonarcloud
+      - step: *check-quality-gate-sonarcloud
+      - step:
+          name: Build / Deploy App
+          deployment: Production
+          script:
+            - apk add zip git openssh-client
+            - git clone git@bitbucket.org:whirlpool-lar/${BITBUCKET_REPO_SLUG}.git -b ${BITBUCKET_BRANCH}
+            - npm install -g typescript && npm install && npm run build
+            - cp -r package.json ./dist
+            - cd dist && npm install --production
+            - zip -r ../code.zip . && cd ..
+            - pipe: atlassian/aws-lambda-deploy:1.5.0
+              variables:
+                AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+                AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+                AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
+                FUNCTION_NAME: ${LAMBDA_FUNCTION_NAME}
+                COMMAND: "update"
+                ZIP_FILE: "code.zip"
+          artifacts:
+            - code.zip
