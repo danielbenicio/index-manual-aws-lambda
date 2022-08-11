@@ -1,28 +1,37 @@
-import { getPriceAuditLog } from './services/prices-audit.service';
-import { saveCsvReport } from './services/save-report.service';
-import { sendReportMail } from './services/mailer.service';
+import internal from 'stream';
+import { S3Event } from 'aws-lambda';
+import {
+  GetObjectCommandInput,
+} from '@aws-sdk/client-s3';
 
-interface LambdaEventPayload {
-  uploadId: string;
-}
+import { getFileFromS3 } from './config/bucket';
+import { parseCsvToJson } from './services/csv-parser.service';
+import { uploadIndexesManual } from './services/upload-indexes-manual.service';
+import { IndexManual } from './entities/index-manual.entity';
 
-export const lambdaHandler = async (event: LambdaEventPayload) => {
+export const lambdaHandler = async (event: S3Event) => {
+  console.log('Lambda has been started');
+
+  const bucket = event.Records[0].s3.bucket.name;
+  const key = decodeURIComponent(event.Records[0].s3.object.key.replace(/\+/g, ' '));
+
+  const params: GetObjectCommandInput = {
+    Bucket: bucket,
+    Key: key,
+  };
+
   try {
-    console.log('Lambda has been started.');
+    const csvFile = await getFileFromS3(params);
 
-    console.log('Event payload: ', JSON.stringify(event));
+    const indexesManual = await parseCsvToJson(
+      csvFile.Body as unknown as internal.Readable,
+    ) as IndexManual[];
 
-    console.log('Starting prices audit log fetch.');
-    const pricesAuditLog = await getPriceAuditLog(event.uploadId);
+    console.log('Starting to save items in Dynamo');
+    await uploadIndexesManual(indexesManual);
 
-    console.log('Starting save audit log report file.');
-    const reportCsv = await saveCsvReport(pricesAuditLog);
-
-    console.log('Starting send audit log report.');
-    await sendReportMail(reportCsv);
-
-    console.log('Process has ended.');
-  } catch (error) {
-    console.log(error);
+    console.log('Process has ended');
+  } catch (err) {
+    console.log(err);
   }
 };
