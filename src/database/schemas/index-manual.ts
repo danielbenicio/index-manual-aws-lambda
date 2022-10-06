@@ -18,6 +18,7 @@ const Schema = new dynamoose.Schema({
   trava_max: { type: String },
   loja_concorrente: { type: String },
   from_price: { type: String },
+  cluster_loja: { type: String },
 }, {
   saveUnknown: true,
 });
