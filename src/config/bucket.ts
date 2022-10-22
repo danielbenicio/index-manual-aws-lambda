@@ -1,5 +1,9 @@
 import {
-  S3Client, GetObjectCommand, GetObjectCommandInput,
+  S3Client,
+  GetObjectCommand,
+  GetObjectCommandInput,
+  PutObjectCommand,
+  PutObjectCommandInput,
 } from '@aws-sdk/client-s3';
 
 const region = process.env.AWS_REGION_PRICE as string;
@@ -17,4 +21,14 @@ export const getFileFromS3 = async (input: GetObjectCommandInput) => {
   const response = await client.send(command);
 
   return response;
+};
+
+export const uploadFileToS3 = async (csvBody: string) => {
+  const command = {
+    Key: 'Index Manual.csv',
+    Bucket: process.env.AWS_INDEX_MANUAL_TABLE_PRICE as string,
+    Body: csvBody,
+  } as PutObjectCommandInput;
+
+  await client.send(new PutObjectCommand(command));
 };

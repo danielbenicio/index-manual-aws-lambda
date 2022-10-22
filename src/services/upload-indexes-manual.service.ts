@@ -15,4 +15,11 @@ const uploadIndexesManual = async (indexesManual: IndexManual[]) => {
   }
 };
 
-export { uploadIndexesManual };
+const getIndexes = async () => {
+  const indexesResponse = await IndexManualModel.scan().all().exec();
+
+  const indexes = indexesResponse.toJSON() as IndexManual[];
+  return indexes;
+};
+
+export { uploadIndexesManual, getIndexes };
