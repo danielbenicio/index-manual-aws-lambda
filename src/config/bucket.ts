@@ -24,8 +24,10 @@ export const getFileFromS3 = async (input: GetObjectCommandInput) => {
 };
 
 export const uploadFileToS3 = async (csvBody: string) => {
+  const actualDateInMs = new Date().getTime();
+
   const command = {
-    Key: 'Index Manual.csv',
+    Key: `Index-Manual-${actualDateInMs}.csv`,
     Bucket: process.env.AWS_INDEX_MANUAL_TABLE_PRICE as string,
     Body: csvBody,
   } as PutObjectCommandInput;
