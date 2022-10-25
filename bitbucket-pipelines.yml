@@ -22,7 +22,6 @@ pipelines:
   branches:
     "{feature/*,bug/*,hotfix/*}":
       - step: *build-test-sonarcloud
-      #- step: *check-quality-gate-sonarcloud
       - step:
           name: Build App
           script:
@@ -60,11 +59,12 @@ pipelines:
             - code.zip
     master:
       - step: *build-test-sonarcloud
-      - step: *check-quality-gate-sonarcloud
+      #- step: *check-quality-gate-sonarcloud
       - step:
           name: Build / Deploy App
           deployment: Production
           script:
+            - rm -rf /opt/atlassian/pipelines/agent/build/.bitbucket/pipelines/generated/pipeline/pipes
             - apk add zip git openssh-client
             - git clone git@bitbucket.org:whirlpool-lar/${BITBUCKET_REPO_SLUG}.git -b ${BITBUCKET_BRANCH}
             - npm install -g typescript && npm install && npm run build
