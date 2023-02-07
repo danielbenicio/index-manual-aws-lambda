@@ -15,4 +15,5 @@ export interface IndexManual {
   loja_concorrente: string;
   from_price: string;
   cluster_loja?: string;
+  fator_ativo?: string;
 }

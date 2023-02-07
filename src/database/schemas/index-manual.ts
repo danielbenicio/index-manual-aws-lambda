@@ -19,6 +19,7 @@ const Schema = new dynamoose.Schema({
   loja_concorrente: { type: String },
   from_price: { type: String },
   cluster_loja: { type: String },
+  fator_ativo: { type: String },
 }, {
   saveUnknown: true,
 });
