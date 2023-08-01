@@ -5,25 +5,32 @@ import {
   PutObjectCommand,
   PutObjectCommandInput,
 } from '@aws-sdk/client-s3';
+import { Secret } from '../entities/secrets.entity';
 
-const region = process.env.AWS_REGION_PRICE as string;
+export const getFileFromS3 = async (input: GetObjectCommandInput, secrets: Secret) => {
+  const client = new S3Client({
+    region: secrets.AWS_REGION_PRICE,
+    credentials: {
+      accessKeyId: secrets.AWS_ACCESS_KEY_ID_PRICE,
+      secretAccessKey: secrets.AWS_SECRET_ACCESS_KEY_PRICE,
+    },
+  });
 
-const client = new S3Client({
-  region,
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID_PRICE as string,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY_PRICE as string,
-  },
-});
-
-export const getFileFromS3 = async (input: GetObjectCommandInput) => {
   const command = new GetObjectCommand(input);
   const response = await client.send(command);
 
   return response;
 };
 
-export const uploadFileToS3 = async (csvBody: string) => {
+export const uploadFileToS3 = async (csvBody: string, secrets: Secret) => {
+  const client = new S3Client({
+    region: secrets.AWS_REGION_PRICE,
+    credentials: {
+      accessKeyId: secrets.AWS_ACCESS_KEY_ID_PRICE,
+      secretAccessKey: secrets.AWS_SECRET_ACCESS_KEY_PRICE,
+    },
+  });
+
   const actualDateInMs = new Date().getTime();
 
   const command = {

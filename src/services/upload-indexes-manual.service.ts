@@ -1,7 +1,10 @@
 import { IndexManual } from '../entities/index-manual.entity';
-import { IndexManualModel } from '../database/schemas/index-manual';
+import { getIndexManualModel } from '../database/schemas/index-manual';
+import { Secret } from '../entities/secrets.entity';
 
-const uploadIndexesManual = async (indexesManual: IndexManual[]) => {
+const uploadIndexesManual = async (indexesManual: IndexManual[], secret: Secret) => {
+  const IndexManualModel = getIndexManualModel(secret);
+
   try {
     await Promise.all(
       indexesManual.map(async (index) => {
@@ -15,7 +18,9 @@ const uploadIndexesManual = async (indexesManual: IndexManual[]) => {
   }
 };
 
-const getIndexes = async () => {
+const getIndexes = async (secret: Secret) => {
+  const IndexManualModel = getIndexManualModel(secret);
+
   const indexesResponse = await IndexManualModel.scan().all().exec();
 
   const indexes = indexesResponse.toJSON() as IndexManual[];
